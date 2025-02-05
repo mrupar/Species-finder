@@ -2,7 +2,7 @@ import pandas as pd
 import math
 
 # Load the Excel file
-filename = 'drakskobler_in_poldini_2021.xlsx'
+filename = 'Dakskobler_2015_merged.xlsx'
 file_path = '/mnt/c/Users/jakob/Downloads/JERNEJ-dipl/exceli_iz_clankov/'+filename
 sheets = pd.ExcelFile(file_path).sheet_names
 print('Working on a file named:', filename)
@@ -110,7 +110,11 @@ def process_sheet(sheet):
                                         #2. Partial Match (handle "E3" matching "E3a", "E3b")
                                         if species_ind.startswith('E') and species_ind[-1].isdigit(): # only if the species_ind is in the form E[digits]
                                             partial_match_condition = (result_df.index == species_name) & (result_df[result_df.columns[0]].str.startswith(species_ind))
-                                            if partial_match_condition.any():
+                                            print(type(species_ind))
+                                            print(result_df[result_df.columns[0]])
+                                            # TO JE TREBA DOKONCAT
+                                            #partial_match_condition_2 = (result_df.index == species_name) & (species_ind.startswith(result_df[result_df.columns[0]].str))
+                                            if partial_match_condition.any(): #or partial_match_condition_2.any():
                                                 result_df.loc[(result_df.index == species_name) & (result_df[result_df.columns[0]].str.startswith(species_ind)), length_col] = species_symbol
                                             else:
                                                 result_df.loc[species_name+' '] = {(result_df.columns[0]): species_ind, length_col: species_symbol}
@@ -130,6 +134,7 @@ def process_sheet(sheet):
                                         # checks for NaN values (not a number) that why we have ==
                                         if species_name in result_df.index and (result_df.loc[species_name].iloc[0] == result_df.loc[species_name].iloc[0]):
                                             if species_ind in result_df.loc[species_name].iloc[0]:
+                                                # NAJDU JE MATCH IN DODAL VREDNOST CISTO NA DESNO
                                                 result_df.loc[species_name, length_col] = species_symbol
                                                 print(f"  - Found match for species: {species_name}, {species_ind}, symbol: {species_symbol}, at row index: {species_name}, col index: {length_col}, Cell value: {cell_value}")
                                             else:
@@ -137,6 +142,7 @@ def process_sheet(sheet):
                                                 # ADD new e1, e2, e3 ...
                                                 #result_df.loc[species_name] = {len(result_df.iloc[1]): species_ind, length_col: species_symbol}
                                                 #print(result_df.columns[0])
+                                                # DODA NOVO RASTLINO V EXCELL
                                                 result_df.loc[species_name] = {(result_df.columns[0]): species_ind, length_col: species_symbol}
                                                 print(f"  - Will add new species to table: {species_name}, {species_ind}, symbol: {species_symbol}, at row index: {species_name}, col index: {length_col}, Cell value: {cell_value}")
                                 
