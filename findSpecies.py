@@ -4,12 +4,12 @@ from openpyxl import load_workbook
 # Load the Excel file
 #! MUST DELETE ALL NON-HEADER 'ZAPOREDNA ŠTEVILKA POPISA' ROWS
 filename = 'Dakskobler_2015_merged.xlsx'
-file_path = 'C:/Users/Miha Rupar/Desktop/python/Species-finder/exceli_iz_clankov/' + filename
+file_path = 'C:/Users/Miha Rupar/Desktop/python/jernej-diplomska/Species-finder//exceli_iz_clankov/' + filename
 sheets = pd.ExcelFile(file_path).sheet_names
 print('Working on a file named:', filename)
 
 # Load result file path
-file_path_result = 'C:/Users/Miha Rupar/Desktop/python/Species-finder/tmp.xlsx'
+file_path_result = 'C:/Users/Miha Rupar/Desktop/python/jernej-diplomska/Species-finder/result.xlsx'
 
 
 def extract_tables(sheet):
@@ -39,13 +39,13 @@ def extract_tables(sheet):
                 raise Exception('No more primula auricula tables found')
             continue
 
-        if pd.isna(row[1]) or row[1] is None:
+        if pd.isna(row.iloc[1]) or row.iloc[1] is None:
             continue
 
         # Store header rows separately
         if pd.isna(row.iloc[-1]) or row.iloc[-1] is None:
             if tables_n > 0:
-                key = str(row[1]).strip()
+                key = str(row.iloc[1]).strip()
                 new_values = row[row.index.isin(filtered_primula.index)].to_frame().T  # Convert to DataFrame
                 new_values.index = [key]  # Set key as row name
 
@@ -61,7 +61,7 @@ def extract_tables(sheet):
                 has_auricula = any(row[col] in ['r', '+', 1, 2, 3, 4, 5, '1', '2', '3', '4', '5'] for col in filtered_primula.index)
 
                 if has_auricula:
-                    unique_key = f'{row[1]} {row[2]}'.strip()
+                    unique_key = f'{row.iloc[1]} {row.iloc[2]}'.strip()
                     new_values = row[row.index.isin(filtered_primula.index)].to_frame().T  # Convert to DataFrame
                     new_values.index = [unique_key]  # Set unique key as row name
 
@@ -71,7 +71,7 @@ def extract_tables(sheet):
                     else:
                         data_df = pd.concat([data_df, new_values])
                 else:
-                    print('No auricula with:', row[1])
+                    print('No auricula with:', row.iloc[1])
             else:
                 raise Exception('No table initialized')
 
