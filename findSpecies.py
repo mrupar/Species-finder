@@ -1,19 +1,21 @@
 import pandas as pd
-from openpyxl import load_workbook
+from openpyxl import Workbook
 import os
 
 directory = 'C:/Users/Miha Rupar/Desktop/python/jernej-diplomska/Species-finder/exceli_iz_clankov'
 
-filename = 'Dakskobler_2015_merged.xlsx'
+filename = 'Dakskobler_et_al_2013_merged.xlsx'
 file_path = os.path.join(directory, filename)
 sheets = pd.ExcelFile(file_path).sheet_names
 
 # Load result file path
-file_path_result = 'C:/Users/Miha Rupar/Desktop/python/jernej-diplomska/Species-finder/result.xlsx'
+file_path_result = 'C:/Users/Miha Rupar/Desktop/python/jernej-diplomska/Species-finder/results/Dakskobler_et_al_2013_final.xlsx'
 
 
 def extract_tables(file, sheet, header_df, data_df):
     df = pd.read_excel(file, sheet_name=sheet)
+
+    filename = os.path.basename(file).split('.')[0]
 
     # Find all instances of 'primula auricula'
     primula_auricula_all = df[df.iloc[:, 1].str.contains("primula auricula", case=False, na=False)]
@@ -32,7 +34,18 @@ def extract_tables(file, sheet, header_df, data_df):
             'številka popisa' in str(row.iloc[1]).lower() or \
                 'štev. popisa' in str(row.iloc[1]).lower():
             continue
-        if tables_n == 0 or ('(' in str(row.iloc[1]) and index > primula_auricula.name and not 'e' in str(row.iloc[2]).lower()):
+
+        # Skip empty rows
+        if pd.isna(row.iloc[1]) or row.iloc[1] is None:
+            continue
+
+        print(row)
+        print(primula_auricula_all)
+
+        # Check if new table starts
+        if tables_n == 0 or ('(' in str(row.iloc[1]) and \
+            index > primula_auricula.name and not \
+                'e' in str(row.iloc[2]).lower()):
 
             if tables_n < len(primula_auricula_all):
                 primula_auricula = primula_auricula_all.iloc[tables_n]
@@ -49,10 +62,6 @@ def extract_tables(file, sheet, header_df, data_df):
 
             else:
                 raise Exception('More tables found than expected.')
-            continue
-
-        # Skip empty rows
-        if pd.isna(row.iloc[1]) or row.iloc[1] is None:
             continue
 
         # Store header rows separately
@@ -97,35 +106,31 @@ def extract_tables(file, sheet, header_df, data_df):
             else:
                 raise Exception('No table initialized')
 
+    header_df.columns = [f'{filename}_{col}' for col in header_df.columns]
+    data_df.columns = [f'{filename}_{col}' for col in data_df.columns]
+
     return header_df, data_df
 
 
 header = pd.DataFrame()
 data = pd.DataFrame()
 
-for file in os.listdir(directory):
-    if file.endswith(".xlsx"):
-        print(f"Processing file: {file}")
-        file_path = os.path.join(directory, file)
-        sheets = pd.ExcelFile(file_path).sheet_names
+for sheet in sheets:
+    try:
+        header, data = extract_tables(file_path, sheet, header, data)
+    except Exception as e:
+        print(f'Error processing sheet {sheet}: {e}')
+    
+# Merge header and data into a single table
+merged_table = pd.concat([header, data], axis=0)
 
-        for sheet in sheets:
-            header, data = extract_tables(file=file_path, sheet=sheet, header_df=header, data_df=data)
+# Check if the file exists, if not, create it
+if not os.path.exists(file_path_result):
+    wb = Workbook()
+    wb.save(file_path_result)
 
-# Combine header and data
-new_table = pd.concat([header, data], axis=0)
+# Save to result file
+with pd.ExcelWriter(file_path_result, mode='w', engine='openpyxl') as writer:
+    merged_table.to_excel(writer, sheet_name='Table', index=True)
 
-if os.path.exists(file_path_result):
-    with pd.ExcelWriter(file_path_result, mode='a', engine='openpyxl', if_sheet_exists="replace") as writer:
-        book = load_workbook(file_path_result)
-
-        if "Table" in book.sheetnames:
-            existing_df = pd.read_excel(file_path_result, sheet_name="Table", index_col=0)
-
-            new_table = existing_df.combine_first(new_table)
-
-        new_table.to_excel(writer, sheet_name="Table", index=True)
-else:
-    new_table.to_excel(file_path_result, sheet_name="Table", index=True)
-
-print("All files processed successfully!")
+print('Done')
